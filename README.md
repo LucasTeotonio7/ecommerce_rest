@@ -4,5 +4,5 @@
 
 #### Result of the course developed by Developer pe
 
-- Author: Developer pe ▶️ [Course Link](https://www.youtube.com/watch?v=B4KZYsyuVOE)
-- Repository: 🔗 [Click here](https://front-web-tutorials.vercel.app/Responsive-Footer/main.html)
+- Author: Developer pe ▶️ [Course Link](https://www.youtube.com/watch?v=MMFBD2Eoeuk&list=PLMbRqrU_kvbRI4PgSzgbh8XPEwC1RNj8F&index=1)
+- Repository: 🔗 [Click here](https://github.com/developerpe/ecommerce_rest)
