@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import fields, serializers
 from apps.users.models import User
 
@@ -12,13 +13,23 @@ class testUserSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_name(self, value):
-        print(value)
+        # custom validation
+        if 'developer' in value:
+            raise serializers.ValidationError(
+                'Error, não pode existir um usuário com esse nome')
+
         return value
 
+    # custom validation
     def validate_email(self, value):
-        print(value)
+        if value == '':
+            raise serializers.ValidationError(
+                'esse campo não pode ficar vazio!')
+
+        if self.validate_name(self.context['name']) in value:
+            raise serializers.ValidationError('email não pode conter nome')
+
         return value
 
     def validate(self, data):
-        print('validação geral')
         return data

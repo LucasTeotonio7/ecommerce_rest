@@ -19,9 +19,11 @@ def user_api_view(request):
             'name':'develop',
             'email':'develop@gmail.com'
         }
-        test_user = testUserSerializer(data = test_data)
+        test_user = testUserSerializer(data = test_data, context = test_data)
         if test_user.is_valid():
             print('Serializer Validado')
+        else:
+            print(test_user.errors)
 
         return Response(users_serializer.data, status=status.HTTP_200_OK)
 
