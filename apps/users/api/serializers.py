@@ -41,3 +41,6 @@ class TestUserSerializer(serializers.Serializer):
         return instance
         # print(validated_data)
         # return super().update(instance, validated_data)
+
+    def save(self):
+        print(self.validated_data)
