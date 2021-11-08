@@ -17,11 +17,12 @@ def user_api_view(request):
 
         test_data = {
             'name':'develop',
-            'email':'develop@gmail.com'
+            'email':'test@gmail.com'
         }
         test_user = testUserSerializer(data = test_data, context = test_data)
         if test_user.is_valid():
-            print('Serializer Validado')
+            user_instance = test_user.save()
+            print(user_instance)
         else:
             print(test_user.errors)
 
