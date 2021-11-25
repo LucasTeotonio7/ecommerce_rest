@@ -4,7 +4,7 @@ from apps.products.api.views.general_views \
     import (MeasureUnitListAPIView, CategoryProductListAPIView,
             IndicatorListAPIView)
 from apps.products.api.views.product_views \
-    import ProductListAPIView, ProductCreateAPIView
+    import ProductListAPIView, ProductCreateAPIView, ProductRetrieveAPIView, ProductDestroyAPIView
 
 
 urlpatterns = [
@@ -13,4 +13,6 @@ urlpatterns = [
     path('indicator/', IndicatorListAPIView.as_view(), name='indicator'),
     path('product/list', ProductListAPIView.as_view(), name='product_list'),
     path('product/create', ProductCreateAPIView.as_view(), name='product_create'),
+    path('product/retrieve/<int:pk>', ProductRetrieveAPIView.as_view(), name='product_retrieve'),
+    path('product/destroy/<int:pk>', ProductDestroyAPIView.as_view(), name='product_destroy'),
 ]

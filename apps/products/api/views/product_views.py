@@ -22,3 +22,26 @@ class ProductCreateAPIView(generics.CreateAPIView):
                 status=status.HTTP_201_CREATED)
         print("Não entrou no is valid")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductRetrieveAPIView(generics.RetrieveAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        return self.get_serializer().Meta.model.objects.filter(state = True)
+
+
+class ProductDestroyAPIView(generics.DestroyAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        return self.get_serializer().Meta.model.objects.filter(state = True)
+
+    def delete(self, request, pk=None):
+        product = self.get_queryset().filter(id=pk).first()
+        if product:
+            product.state = False
+            product.save()
+            return Response({"message": "Produto excluido corretamente"}, status=status.HTTP_200_OK)
+        return Response({"error": "Produto não encontrado!"}, status=status.HTTP_400_BAD_REQUEST)
+
