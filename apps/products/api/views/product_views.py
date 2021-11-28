@@ -45,3 +45,24 @@ class ProductDestroyAPIView(generics.DestroyAPIView):
             return Response({"message": "Produto excluido corretamente"}, status=status.HTTP_200_OK)
         return Response({"error": "Produto não encontrado!"}, status=status.HTTP_400_BAD_REQUEST)
 
+class ProductUpdateAPIView(generics.UpdateAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self, pk):
+        return self.get_serializer().Meta.model.objects.filter(id = pk, state = True).first()
+
+    def patch(self, request, pk=None):
+        if self.get_queryset(pk):
+            product_serializer = self.serializer_class(self.get_queryset(pk))
+            return Response(product_serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"error": "Produto não encontrado!"},
+            status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk=None):
+        if self.get_queryset(pk):
+            product_serializer = self.serializer_class(self.get_queryset(pk), data = request.data)
+            if product_serializer.is_valid():
+                product_serializer.save()
+                return Response(product_serializer.data, status = status.HTTP_200_OK)
+            return Response(product_serializer.errors, status = status.HTTP_400_BAD_REQUEST)
