@@ -2,6 +2,11 @@ from django.core.exceptions import ValidationError
 from rest_framework import fields, serializers
 from apps.users.models import User
 
+class UserTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username','email','name','last_name')
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
