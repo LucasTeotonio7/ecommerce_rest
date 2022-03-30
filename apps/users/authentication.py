@@ -25,16 +25,22 @@ class ExpiringTokenAuthentication(TokenAuthentication):
         return is_expired
 
     def authenticate_credentials(self, key):
+        message, token, user = None, None, None
         try:
             token = self.get_model().objects.select_related('user').get(key = key)
+            user = token.user
         except self.get_model().DoesNotExist:
-            raise AuthenticationFailed('Token Inválido.')
+            # raise AuthenticationFailed('Token Inválido.')
+            message = 'Token Inválido'
 
-        if not token.user.is_active:
-            raise AuthenticationFailed('Usuário não ativo ou eliminado.')
+        if token is not None:
+            if not token.user.is_active:
+                # raise AuthenticationFailed('Usuário não ativo ou eliminado.')
+                message = 'Usuário não ativo ou eliminado.'
 
-        is_expired = self.token_expire_handler(token)
-        if is_expired:
-            raise AuthenticationFailed('Seu token foi expirado.')
+            is_expired = self.token_expire_handler(token)
+            if is_expired:
+                # raise AuthenticationFailed('Seu token foi expirado.')
+                message = 'Seu token foi expirado.'
 
-        return (token.user, token)
+        return (user, token, message)
