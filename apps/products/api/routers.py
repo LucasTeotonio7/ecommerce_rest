@@ -6,7 +6,7 @@ router = DefaultRouter()
 
 router.register(r'products',ProductViewSet, basename='Products')
 router.register(r'measure-unit',MeasureUnitListAPIView, basename='measure_unit')
-router.register(r'indicators',CategoryProductListAPIView, basename='indicators')
-router.register(r'category-products',IndicatorListAPIView, basename='category_products')
+router.register(r'indicators',IndicatorListAPIView, basename='indicators')
+router.register(r'category-products',CategoryProductListAPIView, basename='category_products')
 
 urlpatterns = router.urls
