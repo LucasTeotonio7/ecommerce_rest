@@ -1,6 +1,6 @@
 from ast import arg
 from email import message
-from rest_framework import status
+from rest_framework import status, authentication, exceptions
 from rest_framework.authentication import get_authorization_header
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
@@ -8,9 +8,9 @@ from rest_framework.renderers import JSONRenderer
 from apps.users.authentication import ExpiringTokenAuthentication
 
 
-class authentication(object):
+class authentication(authentication.BaseAuthentication):
 
-    User = None
+    user = None
 
     def get_user(self,request):
         token = get_authorization_header(request).split()
@@ -29,15 +29,11 @@ class authentication(object):
 
         return None
 
+    def authenticate(self, request):
 
-    def dispatch(self, request, *args, **kwargs):
-        user = self.get_user(request)
+        self.get_user(request)
 
-        # found token in request
-        if user is not None:
-            return super().dispatch(request, *args, **kwargs)
-        response = Response({'error':'Não foram enviadas as credenciais!'}, status=status.HTTP_400_BAD_REQUEST)
-        response.accepted_renderer = JSONRenderer()
-        response.accepted_media_type = 'application/json'
-        response.renderer_context = {}
-        return response
+        if self.user is None:
+            raise exceptions.AuthenticationFailed('Não foram enviadas as credenciais!')
+
+        return (self.user, None)
