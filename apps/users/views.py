@@ -1,115 +1,60 @@
-from datetime import datetime
+from django.contrib.auth import authenticate
 
-from django.contrib.sessions.models import Session
-
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
 
-from apps.users.authentication_mixins import authentication
-from apps.users.api.serializers import UserTokenSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.users.api.serializers import (
+    CustomTokenObtainPairSerializer, CustomUserSerializer
+)
 
-class UserToken(authentication, APIView):
+from apps.users.models import User
 
-    def get(self, request, *args, **kwargs):
-        print(self.user)
-        try:
-            user_token,_ = Token.objects.get_or_create(self.user)
-            user = UserTokenSerializer(self.user)
+class Login(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username', '')
+        password = request.data.get('password', '')
+
+        user = authenticate (
+            username=username,
+            password=password
+        )
+
+        if user:
+            login_serializer = self.serializer_class(data=request.data)
+            if login_serializer.is_valid():
+                user_serializer = CustomUserSerializer(user)
+                return Response({
+                    'token': login_serializer.validated_data.get('access'),
+                    'refresh-token': login_serializer.validated_data.get('refresh'),
+                    'user': user_serializer.data,
+                    'message': 'Início de sessão bem sucedida!'
+                }, status=status.HTTP_200_OK)
+
             return Response({
-                'token': user_token.key,
-                'user': user.data
-            })
-        except:
-            return Response({
-                'error': 'Credenciais enviadas incorretas!'
+                'error':'Nome de usuário ou senha incorretos!'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+                'error':'Nome de usuário ou senha incorretos!'
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Login(ObtainAuthToken):
-
+class Logout(GenericAPIView):
     def post(self, request, *args, **kwargs):
-        login_serializer = self.serializer_class(
-            data = request.data, context = {'request':request})
+        user = User.objects.filter(id=request.data.get('user',''))
 
-        if login_serializer.is_valid():
-            user = login_serializer.validated_data['user']
-            if user.is_active:
-                token,created = Token.objects.get_or_create(user = user)
-                user_serializer = UserTokenSerializer(user)
-                print(token, created, user_serializer.data)
-                if created:
-                    print("create sim")
-                    return Response({
-                        'token': token.key,
-                        'user': user_serializer.data,
-                        'message':'inicio de sessão'
-                    }, status = status.HTTP_201_CREATED)
-                else:
-                    print("create não")
-                    all_sessions = Session.objects.filter(expire_date__gte=datetime.now())
-                    if all_sessions.exists():
-                        for session in all_sessions:
-                            session_data = session.get_decoded()
-                            if(user.id == int(session_data.get('_auth_user_id'))):
-                                session.delete()
-                    token.delete()
-                    token = Token.objects.create(user = user)
-                    return Response({
-                        'token': token.key,
-                        'user': user_serializer.data,
-                        'message':'inicio de sessão'
-                    }, status = status.HTTP_200_OK)
+        if user.exists():
+            RefreshToken.for_user(user.first())
+            Response({
+                'message': 'Sessão Encerrada com sucesso!'
+            }, status=status.HTTP_200_OK)
 
-                    # token.delete()
-                    # return Response(
-                    # {'error':'este usuário já possui uma sessão ativa'},
-                    # status = status.HTTP_409_CONFLICT)
-            else:
-                return Response(
-                    {'error':'este usuário não pode iniciar a sessão'},
-                    status = status.HTTP_401_UNAUTHORIZED)
-        else:
-            return Response(
-            {'message':'nome do usuário ou senha incorreto'},
-            status = status.HTTP_400_BAD_REQUEST)
-
-
-class Logout(APIView):
-
-    def get(self, request, *args, **kwargs):
-        try:
-            token = request.GET.get('token')
-            token = Token.objects.filter(key = token).first()
-
-            if token:
-                user = token.user
-
-                all_sessions = Session.objects.filter(expire_date__gte=datetime.now())
-                if all_sessions.exists():
-                    for session in all_sessions:
-                        session_data = session.get_decoded()
-                        if(user.id == int(session_data.get('_auth_user_id'))):
-                            session.delete()
-
-                token.delete()
-
-                session_message = 'sessões encerradas.'
-                token_message = 'token excluído.'
-
-                return Response({
-                    'token_message': token_message,
-                    'session_message': session_message
-                }, status = status.HTTP_200_OK)
-
-            return Response({
-                'error':'Não encontrado um usuário com essas credenciais'
-            }, status = status.HTTP_400_BAD_REQUEST)
-
-        except:
-            return Response({
-                'error': 'Não foi encontrado um token na requisição'
-            }, status= status.HTTP_409_CONFLICT)
+        return Response({
+                'error':'Não existe esse usuário!'
+        }, status=status.HTTP_400_BAD_REQUEST)
