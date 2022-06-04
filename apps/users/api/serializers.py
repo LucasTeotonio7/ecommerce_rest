@@ -26,11 +26,11 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-    def update(self, instance, validated_data):
-        update_user = super().update(instance, validated_data)
-        update_user.set_password(validated_data['password'])
-        update_user.save()
-        return update_user
+class UpdateUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'name', 'last_name')
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -44,5 +44,4 @@ class UserListSerializer(serializers.ModelSerializer):
             'name': instance['name'],
             'username': instance['username'],
             'email': instance['email'],
-            'password': instance['password'],
         }

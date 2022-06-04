@@ -1,65 +1,74 @@
+from django.shortcuts import get_object_or_404
+
+from urllib import response
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from apps.users.models import User
-from apps.users.api.serializers import UserSerializer, UserListSerializer
+from apps.users.api.serializers import \
+    UserSerializer, UserListSerializer, UpdateUserSerializer
 
-@api_view(['GET', 'POST'])
-def user_api_view(request):
 
-    # list
-    if request.method == 'GET':
+class UserViewSet(viewsets.GenericViewSet):
+    serializer_class = UserSerializer
+    list_serializer_class = UserListSerializer
+    queryset = None
+    model = User
 
-        # queryset
-        users = User.objects.all().values('id','name','username','email','password')
-        users_serializer = UserListSerializer(users, many=True)
-        return Response(users_serializer.data, status=status.HTTP_200_OK)
+    def get_object(self, pk):
+        return get_object_or_404(self.model, pk=pk)
 
-    # create
-    elif request.method == 'POST':
-        user_serializer = UserSerializer(data = request.data)
+    def get_queryset(self):
+        if self.queryset is None:
+            self.queryset = self.model.objects.filter(
+                is_active=True).values('id','name','username','email')
 
-        # validation
+        return self.queryset
+
+    def list(self, request):
+        users = self.get_queryset()
+        user_serializer = self.list_serializer_class(users, many=True)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+    def create(self, request):
+        user_serializer = self.serializer_class(data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
-            return Response(
-                {'message:':'Usuário cadastrado corretamente!'},
-                status = status.HTTP_201_CREATED)
+            return Response({
+                'message': 'Usuário cadastrado com sucesso!'
+            }, status=status.HTTP_201_CREATED)
 
-        return Response(
-            user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'message': 'Não foi possivel realizar o cadastro',
+            'errors': user_serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def user_detail_api_view(request, pk=None):
-    # queryset
-    user = User.objects.filter(id=pk).first()
+    def retrieve(self, request, pk=None):
+        user = self.get_object(pk)
+        user_serializer = self.serializer_class(user)
+        return Response(user_serializer.data)
 
-    # validation
-    if user:
+    def update(self, request, pk=None):
+        user = self.get_object(pk)
+        user_serializer = UpdateUserSerializer(user, data=request.data)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response({
+                'message': 'Usuário atualizado com sucesso!'
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'message': 'Não foi possivel atualizar o cadastro',
+            'errors': user_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        # retrieve
-        if request.method == 'GET':
-            user_serializer = UserSerializer(user)
-            return Response(user_serializer.data, status=status.HTTP_200_OK)
-
-        # update
-        if request.method == 'PUT':
-            user_serializer = UserSerializer(user, data=request.data)
-            if user_serializer.is_valid():
-                user_serializer.save()
-                return Response(
-                    user_serializer.data, status=status.HTTP_200_OK)
-            return Response(
-                user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        # delete
-        elif request.method == 'DELETE':
-            user.delete()
-            return Response(
-                {'message:':'Usuário excluído corretamente!'},
-                status=status.HTTP_200_OK)
-
-    return Response(
-        {'message:':'Não foi encontrado um usuário com esses dados'},
-        status=status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, pk=None):
+        user_destroy = self.model.objects.filter(id=pk).update(is_active=False)
+        if user_destroy == 1:
+            return Response({
+                'message': 'Usuário excluído corretamente!'
+            })
+        return Response({
+            'message': 'Não existe este usuário para excluir'
+        }, status=status.HTTP_404_NOT_FOUND)
